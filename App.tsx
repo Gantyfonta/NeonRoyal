@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { GameType, GameState, GameHistoryItem, TimeContext, ShopItem } from './types';
 import { INITIAL_BALANCE, SHOP_ITEMS } from './constants';
 import BalanceDisplay from './components/BalanceDisplay';
@@ -9,245 +9,245 @@ import Blackjack from './components/Blackjack';
 import Roulette from './components/Roulette';
 import HiLo from './components/HiLo';
 import CoinFlip from './components/CoinFlip';
-import Rewards from './components/Rewards';
 import TexasHoldem from './components/TexasHoldem';
 import Plinko from './components/Plinko';
+import Rewards from './components/Rewards';
+import PitBoss from './components/PitBoss';
 
-const STORAGE_KEY = 'neon_royal_casino_state_v3';
-
+// Main application component that coordinates state and views
 const App: React.FC = () => {
-  const [now, setNow] = useState(new Date());
-  const cheatSequence = useRef<string[]>([]);
-  const KONAMI_CODE = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'a', 'b', 'Enter'];
-
+  const [activeGame, setActiveGame] = useState<GameType>(GameType.LOBBY);
+  const [lastEvent, setLastEvent] = useState<string>('');
   const [state, setState] = useState<GameState>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error("Failed to parse saved state", e);
-      }
-    }
+    const saved = localStorage.getItem('neon_royal_state');
+    if (saved) return JSON.parse(saved);
     return {
       balance: INITIAL_BALANCE,
       bet: 10,
       history: [],
-      lastRewardClaimed: 0,
-      lastFridayFortuneClaimed: 0,
       ownedItems: ['theme_default'],
       activeTheme: 'theme_default',
-      activeAccessory: ''
+      activeAccessory: '',
     };
   });
 
-  const [activeGame, setActiveGame] = useState<GameType>(GameType.LOBBY);
-  const [lastEvent, setLastEvent] = useState<string>('');
+  const [timeContext] = useState<TimeContext>({
+    day: new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date()),
+    hour: new Date().getHours(),
+    isGoldenHour: false,
+    isGraveyard: false,
+    activeDailyBonus: 'NONE',
+  });
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      cheatSequence.current = [...cheatSequence.current, e.key].slice(-KONAMI_CODE.length);
-      if (JSON.stringify(cheatSequence.current) === JSON.stringify(KONAMI_CODE)) {
-        setState(prev => ({ ...prev, balance: prev.balance + 100 }));
-        setLastEvent("Dealer whispers: 'A little gift for a friend...' (Cheat activated)");
-        cheatSequence.current = [];
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  useEffect(() => {
-    const themeItem = SHOP_ITEMS.find(i => i.id === state.activeTheme);
-    const themeClass = themeItem?.value || '';
-    document.body.className = ''; 
-    if (themeClass) document.body.classList.add(themeClass);
-  }, [state.activeTheme]);
-
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const timeContext: TimeContext = useMemo(() => {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const dayName = days[now.getDay()];
-    const hour = now.getHours();
-    const bonuses: Record<string, string> = {
-      'Monday': 'Big Money Monday (3x Daily Reward)',
-      'Tuesday': 'Blackjack Tuesday (2.5:1 Payouts)',
-      'Wednesday': 'Wheelie Wednesday (45:1 Roulette)',
-      'Thursday': 'Turbo Thursday (1.5x Slots)',
-      'Friday': 'Fortune Friday ($500 Bonus)',
-      'Saturday': 'Super Saturday (1.2x All Wins)',
-      'Sunday': 'Sunday Funday (2.5x Mini-games)'
-    };
-    return {
-      day: dayName,
-      hour: hour,
-      isGoldenHour: hour === 17, 
-      isGraveyard: hour >= 0 && hour < 3,
-      activeDailyBonus: bonuses[dayName]
-    };
-  }, [now]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem('neon_royal_state', JSON.stringify(state));
   }, [state]);
 
-  const handleGameResult = useCallback((payout: number, context: string) => {
-    let finalPayout = payout;
-    if (payout > 0) {
-      if (timeContext.isGoldenHour) finalPayout = Math.ceil(finalPayout * 1.5);
-      if (timeContext.day === 'Saturday') finalPayout = Math.ceil(finalPayout * 1.2);
-    }
+  const setBet = (val: number) => setState(s => ({ ...s, bet: val }));
 
-    setState(prev => {
-      const newBalance = Math.ceil(prev.balance + finalPayout);
-      let newHistory = prev.history;
-      if (payout !== 0) {
-        const historyItem: GameHistoryItem = {
-          id: Math.random().toString(36).substr(2, 9),
-          game: activeGame,
-          amount: Math.ceil(Math.abs(finalPayout)),
-          result: finalPayout > 0 ? 'WIN' : (finalPayout === 0 && context.toLowerCase().includes('push')) ? 'PUSH' : 'LOSS',
-          timestamp: Date.now()
-        };
-        newHistory = [historyItem, ...prev.history].slice(0, 10);
-      }
-      return { ...prev, balance: newBalance, history: newHistory };
+  const handleResult = useCallback((amount: number, resultText: string) => {
+    setLastEvent(resultText);
+    setState(s => {
+      const result: 'WIN' | 'LOSS' | 'PUSH' = amount > 0 ? 'WIN' : (amount < 0 ? 'LOSS' : 'PUSH');
+      const historyItem: GameHistoryItem = {
+        id: Math.random().toString(36).substr(2, 9),
+        game: activeGame,
+        amount: Math.abs(amount),
+        result,
+        timestamp: Date.now(),
+      };
+      return {
+        ...s,
+        balance: s.balance + amount,
+        history: [historyItem, ...s.history].slice(0, 50),
+      };
     });
-    setLastEvent(context);
-  }, [activeGame, state.bet, timeContext]);
+  }, [activeGame]);
 
-  const activeAccEmoji = useMemo(() => {
-    return SHOP_ITEMS.find(i => i.id === state.activeAccessory)?.value || '';
-  }, [state.activeAccessory]);
+  const handleClaimReward = (amount: number, message: string, type: 'DAILY' | 'FRIDAY') => {
+    setLastEvent(message);
+    setState(s => ({
+      ...s,
+      balance: s.balance + amount,
+      lastRewardClaimed: type === 'DAILY' ? Date.now() : s.lastRewardClaimed,
+      lastFridayFortuneClaimed: type === 'FRIDAY' ? Date.now() : s.lastFridayFortuneClaimed,
+    }));
+  };
+
+  const handlePurchase = (item: ShopItem) => {
+    if (state.balance < item.price) return;
+    setState(s => ({
+      ...s,
+      balance: s.balance - item.price,
+      ownedItems: [...s.ownedItems, item.id],
+    }));
+    setLastEvent(`You purchased the ${item.name}!`);
+  };
+
+  const handleEquip = (item: ShopItem) => {
+    setState(s => ({
+      ...s,
+      activeTheme: item.type === 'THEME' ? item.id : s.activeTheme,
+      activeAccessory: item.type === 'ACCESSORY' ? item.id : s.activeAccessory,
+    }));
+    setLastEvent(`Equipped ${item.name}.`);
+  };
+
+  const activeThemeObj = useMemo(() => 
+    SHOP_ITEMS.find(i => i.id === state.activeTheme), 
+  [state.activeTheme]);
+
+  const activeAccObj = useMemo(() => 
+    SHOP_ITEMS.find(i => i.id === state.activeAccessory), 
+  [state.activeAccessory]);
 
   const renderGame = () => {
-    const props = { balance: state.balance, bet: state.bet, onResult: handleGameResult };
     switch (activeGame) {
-      case GameType.SLOTS: return <SlotMachine {...props} bonusMultiplier={timeContext.day === 'Thursday' ? 1.5 : 1} />;
-      case GameType.BLACKJACK: return <Blackjack {...props} bonusPayout={timeContext.day === 'Tuesday' ? 2.5 : 2} />;
-      case GameType.ROULETTE: return <Roulette {...props} straightUpMultiplier={timeContext.day === 'Wednesday' ? 45 : 35} />;
-      case GameType.HI_LO: return <HiLo {...props} winMultiplier={timeContext.day === 'Sunday' ? 2.5 : 1.85} />;
-      case GameType.COIN_FLIP: return <CoinFlip {...props} winMultiplier={timeContext.day === 'Sunday' ? 2.5 : 2} />;
-      case GameType.TEXAS_HOLDEM: return <TexasHoldem {...props} />;
-      case GameType.PLINKO: return <Plinko {...props} />;
-      case GameType.REWARDS: return <Rewards 
-        balance={state.balance} 
-        lastClaimed={state.lastRewardClaimed || 0} 
-        lastFridayClaimed={state.lastFridayFortuneClaimed || 0}
-        ownedItems={state.ownedItems}
-        activeTheme={state.activeTheme}
-        activeAccessory={state.activeAccessory}
-        // Fix: Changed arrow function body to a block to avoid testing void (return value of setState) for truthiness.
-        onClaim={(amt, msg, type) => {
-          setState(p => ({
-            ...p, 
-            balance: p.balance + amt, 
-            lastRewardClaimed: type === 'DAILY' ? Date.now() : p.lastRewardClaimed,
-            lastFridayFortuneClaimed: type === 'FRIDAY' ? Date.now() : p.lastFridayFortuneClaimed
-          }));
-          setLastEvent(msg);
-        }}
-        // Fix: Changed arrow function body to a block to avoid testing void (return value of setState) for truthiness.
-        onPurchase={(item) => {
-          if (state.balance >= item.price) {
-            setState(p => ({
-              ...p, 
-              balance: p.balance - item.price, 
-              ownedItems: [...p.ownedItems, item.id],
-              ...(item.type === 'THEME' ? { activeTheme: item.id } : { activeAccessory: item.id })
-            }));
-          }
-        }}
-        onEquip={(item) => setState(p => ({ ...p, ...(item.type === 'THEME' ? { activeTheme: item.id } : { activeAccessory: item.id }) }))}
-        timeContext={timeContext}
-      />;
-      default: return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 py-12 w-full">
-          {[
-            { type: GameType.SLOTS, title: 'Neon Slots', icon: 'fa-gem', desc: 'Lucky 7s and Gems.', color: 'bg-emerald-500' },
-            { type: GameType.BLACKJACK, title: 'Blackjack', icon: 'fa-diamond', desc: 'Reach 21.', color: 'bg-blue-600' },
-            { type: GameType.ROULETTE, title: 'Roulette', icon: 'fa-circle-dot', desc: 'Straight Up 35:1.', color: 'bg-rose-600' },
-            { type: GameType.TEXAS_HOLDEM, title: 'Hold\'em', icon: 'fa-spade', desc: 'Heads-up Poker.', color: 'bg-amber-600' },
-            { type: GameType.PLINKO, title: 'Plinko', icon: 'fa-braille', desc: 'Gravity wins.', color: 'bg-cyan-500' },
-            { type: GameType.REWARDS, title: 'The Boutique', icon: 'fa-gift', desc: 'Daily Bonus & Shop.', color: 'bg-purple-600' }
-          ].map(game => (
-            <button key={game.type} onClick={() => setActiveGame(game.type)} className="group relative flex flex-col items-center p-8 bg-slate-800/40 rounded-3xl border border-slate-700 hover:border-accent transition-all hover:scale-[1.02] active:scale-[0.98]">
-              <div className={`w-14 h-14 ${game.color} rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:rotate-12 transition-transform`}>
-                <i className={`fas ${game.icon} text-xl text-white`}></i>
-              </div>
-              <h3 className="text-xl font-bold text-white">{game.title}</h3>
-              <p className="text-slate-400 text-xs text-center mt-2">{game.desc}</p>
-            </button>
-          ))}
-        </div>
-      );
+      case GameType.SLOTS:
+        return <SlotMachine balance={state.balance} bet={state.bet} onResult={handleResult} bonusMultiplier={timeContext.day === 'Thursday' ? 1.5 : 1} />;
+      case GameType.BLACKJACK:
+        return <Blackjack balance={state.balance} bet={state.bet} onResult={handleResult} bonusPayout={timeContext.day === 'Tuesday' ? 2.5 : 2} />;
+      case GameType.ROULETTE:
+        return <Roulette balance={state.balance} bet={state.bet} onResult={handleResult} straightUpMultiplier={timeContext.day === 'Wednesday' ? 45 : 35} />;
+      case GameType.HI_LO:
+        return <HiLo balance={state.balance} bet={state.bet} onResult={handleResult} winMultiplier={timeContext.day === 'Sunday' ? 2.5 : 1.85} />;
+      case GameType.COIN_FLIP:
+        return <CoinFlip balance={state.balance} bet={state.bet} onResult={handleResult} winMultiplier={timeContext.day === 'Sunday' ? 2.5 : 2} />;
+      case GameType.TEXAS_HOLDEM:
+        return <TexasHoldem balance={state.balance} bet={state.bet} onResult={handleResult} />;
+      case GameType.PLINKO:
+        return <Plinko balance={state.balance} bet={state.bet} onResult={handleResult} />;
+      case GameType.REWARDS:
+        return (
+          <Rewards 
+            balance={state.balance} 
+            lastClaimed={state.lastRewardClaimed || 0} 
+            lastFridayClaimed={state.lastFridayFortuneClaimed || 0}
+            ownedItems={state.ownedItems}
+            activeTheme={state.activeTheme}
+            activeAccessory={state.activeAccessory}
+            onClaim={handleClaimReward}
+            onPurchase={handlePurchase}
+            onEquip={handleEquip}
+            timeContext={timeContext}
+          />
+        );
+      default:
+        return (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full max-w-4xl py-8">
+            {Object.values(GameType).filter(t => t !== GameType.LOBBY && t !== GameType.REWARDS).map(type => (
+              <button 
+                key={type} 
+                onClick={() => setActiveGame(type)}
+                className="bg-slate-800/40 hover:bg-slate-700/60 border border-slate-700 p-8 rounded-3xl flex flex-col items-center gap-4 transition-all hover:scale-105 group"
+              >
+                <div className="w-16 h-16 rounded-2xl bg-slate-900 flex items-center justify-center text-3xl group-hover:text-accent transition-colors">
+                  <i className={`fas ${
+                    type === GameType.SLOTS ? 'fa-republican' : 
+                    type === GameType.BLACKJACK ? 'fa-suit-spades' : 
+                    type === GameType.ROULETTE ? 'fa-circle-dot' : 
+                    type === GameType.HI_LO ? 'fa-arrows-up-down' : 
+                    type === GameType.COIN_FLIP ? 'fa-coins' : 
+                    type === GameType.TEXAS_HOLDEM ? 'fa-hat-cowboy' : 
+                    'fa-braille'
+                  }`}></i>
+                </div>
+                <span className="font-black text-xs uppercase tracking-[0.2em]">{type.replace('_', ' ')}</span>
+              </button>
+            ))}
+          </div>
+        );
     }
   };
 
   return (
-    <div className="min-h-screen casino-gradient flex flex-col">
-      <header className="px-6 py-4 flex flex-col border-b border-slate-800/50 bg-black/40 backdrop-blur-md sticky top-0 z-50">
-        <div className="flex items-center justify-between">
+    <div className={`min-h-screen bg-slate-950 text-white font-sans selection:bg-accent selection:text-black ${activeThemeObj?.value || ''}`}>
+      <nav className="border-b border-white/5 bg-slate-900/40 backdrop-blur-xl sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveGame(GameType.LOBBY)}>
-            <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center shadow-lg shadow-yellow-500/20">
-              <i className="fas fa-crown text-black text-xs"></i>
+            <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-black font-black text-lg shadow-[0_0_15px_rgba(251,191,36,0.3)]">
+              {activeAccObj?.value || 'N'}
             </div>
-            <h1 className="text-lg font-black tracking-tighter text-white">NEON<span className="text-accent">ROYAL</span> {activeAccEmoji}</h1>
+            <span className="font-black uppercase tracking-tighter text-xl">Neon<span className="text-accent">Royal</span></span>
           </div>
-          <div className="flex items-center gap-4 md:gap-8">
-             <div className="text-right">
-                <p className="text-[10px] font-black uppercase text-slate-500">Bonus</p>
-                <p className="text-xs font-bold text-accent">{timeContext.day} Boost</p>
-             </div>
-             <div className="text-right hidden sm:block">
-                <p className="text-[10px] font-black uppercase text-slate-500">Session</p>
-                <p className="text-xs font-bold text-white tabular-nums">{now.toLocaleTimeString([], { hour12: false })}</p>
-             </div>
+          
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setActiveGame(GameType.REWARDS)}
+              className="p-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-700 text-accent transition-all relative"
+            >
+              <i className="fas fa-gift"></i>
+              {(Date.now() - (state.lastRewardClaimed || 0) > 24 * 60 * 60 * 1000) && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-slate-900"></span>
+              )}
+            </button>
+            <div className="h-8 w-px bg-white/10 hidden md:block"></div>
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest leading-none">Status</span>
+              <span className="text-xs font-bold text-accent">VIP Member</span>
+            </div>
           </div>
         </div>
-      </header>
+      </nav>
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-6 pt-6 space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-3 space-y-6">
-            <BalanceDisplay balance={state.balance} bet={state.bet} setBet={(b) => setState(s => ({...s, bet: b}))} />
-            <div className="bg-slate-900/40 rounded-3xl p-6 md:p-12 border border-slate-800/50 min-h-[500px] flex items-center justify-center relative">
+      <main className="max-w-6xl mx-auto px-6 py-8 space-y-8 pb-32">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
+            <BalanceDisplay balance={state.balance} bet={state.bet} setBet={setBet} />
+            
+            <div className="bg-slate-900/40 border border-white/5 rounded-[2.5rem] p-8 min-h-[500px] flex items-center justify-center shadow-2xl relative overflow-hidden">
                {activeGame !== GameType.LOBBY && (
-                 <button onClick={() => setActiveGame(GameType.LOBBY)} className="absolute top-6 left-6 text-slate-400 hover:text-white flex items-center gap-2 text-xs font-black uppercase tracking-widest z-20">
-                   <i className="fas fa-arrow-left"></i> Lobby
+                 <button 
+                  onClick={() => setActiveGame(GameType.LOBBY)}
+                  className="absolute top-6 left-6 text-slate-500 hover:text-white transition-colors"
+                 >
+                   <i className="fas fa-arrow-left mr-2"></i> Lobby
                  </button>
                )}
                {renderGame()}
             </div>
           </div>
-          <aside className="space-y-6">
+
+          <div className="space-y-8">
+            <PitBoss balance={state.balance} history={state.history} />
             <DealerLog lastEvent={lastEvent} />
-            <div className="bg-slate-900/30 rounded-2xl p-5 border border-slate-800/50">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Recent Plays</h4>
-              <div className="space-y-3">
-                {state.history.length === 0 ? <p className="text-slate-600 text-xs italic">Awaiting your first bet...</p> : 
-                  state.history.map(item => (
-                    <div key={item.id} className="flex items-center justify-between text-xs py-2 border-b border-slate-800/50 last:border-0">
-                      <span className="font-bold text-slate-400">{item.game}</span>
-                      <span className={item.result === 'WIN' ? 'text-green-500' : 'text-rose-500'}>
-                        {item.result === 'WIN' ? '+' : '-'}${item.amount}
+            
+            <div className="bg-slate-900/60 rounded-3xl p-6 border border-white/5 space-y-4">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Floor History</h4>
+              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                {state.history.length === 0 ? (
+                  <p className="text-xs text-slate-600 italic">No action yet today...</p>
+                ) : (
+                  state.history.map((h) => (
+                    <div key={h.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-white uppercase tracking-wider">{h.game}</span>
+                        <span className="text-[9px] text-slate-500">{new Date(h.timestamp).toLocaleTimeString()}</span>
+                      </div>
+                      <span className={`text-xs font-black ${h.result === 'WIN' ? 'text-emerald-500' : h.result === 'LOSS' ? 'text-rose-500' : 'text-slate-400'}`}>
+                        {h.result === 'WIN' ? '+' : h.result === 'LOSS' ? '-' : ''}${h.amount}
                       </span>
                     </div>
                   ))
-                }
+                )}
               </div>
             </div>
-          </aside>
+          </div>
         </div>
       </main>
-
-      <footer className="mt-8 px-6 py-6 border-t border-slate-800/50 bg-black/40 text-center">
-        <p className="text-slate-600 text-[9px] uppercase tracking-[0.2em]">Neon Royal Systems | Non-commercial Virtual Credits | Play Responsibly</p>
-      </footer>
+      
+      <div className="fixed bottom-0 left-0 right-0 bg-slate-900/80 backdrop-blur-2xl border-t border-white/5 px-6 py-4 lg:hidden z-50">
+        <div className="flex justify-around items-center max-w-md mx-auto">
+          <button onClick={() => setActiveGame(GameType.LOBBY)} className={`flex flex-col items-center gap-1 ${activeGame === GameType.LOBBY ? 'text-accent' : 'text-slate-500'}`}>
+            <i className="fas fa-house"></i>
+            <span className="text-[8px] font-bold uppercase">Home</span>
+          </button>
+          <button onClick={() => setActiveGame(GameType.REWARDS)} className={`flex flex-col items-center gap-1 ${activeGame === GameType.REWARDS ? 'text-accent' : 'text-slate-500'}`}>
+            <i className="fas fa-shop"></i>
+            <span className="text-[8px] font-bold uppercase">Store</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

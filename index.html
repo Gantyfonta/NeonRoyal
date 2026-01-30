@@ -6,64 +6,82 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Neon Royal Casino - A luxury digital gambling experience">
     <title>Neon Royal Casino</title>
-    <!-- Relative base for GitHub Pages subfolder compatibility -->
-    <base href="./">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👑</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;600;700&display=swap');
         
         :root {
-            --primary-glow: rgba(212, 175, 55, 0.5);
-            --primary-accent: #eab308; /* yellow-500 */
-            --bg-start: #1a1c2c;
-            --bg-end: #0a0a0c;
+            --primary-glow: rgba(212, 175, 55, 0.4);
+            --primary-accent: #eab308;
+            --bg-start: #0f172a;
+            --bg-end: #020617;
         }
 
         .theme-pink {
-            --primary-accent: #f472b6; /* pink-400 */
-            --primary-glow: rgba(244, 114, 182, 0.5);
+            --primary-accent: #f472b6;
+            --primary-glow: rgba(244, 114, 182, 0.4);
             --bg-start: #2d1b2e;
         }
 
         .theme-emerald {
-            --primary-accent: #10b981; /* emerald-500 */
-            --primary-glow: rgba(16, 185, 129, 0.5);
+            --primary-accent: #10b981;
+            --primary-glow: rgba(16, 185, 129, 0.4);
             --bg-start: #064e3b;
         }
 
         .theme-solar {
-            --primary-accent: #f97316; /* orange-500 */
-            --primary-glow: rgba(249, 115, 22, 0.5);
+            --primary-accent: #f97316;
+            --primary-glow: rgba(249, 115, 22, 0.4);
             --bg-start: #451a03;
         }
 
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-end);
-            color: #e2e8f0;
+            color: #f1f5f9;
             margin: 0;
             overflow-x: hidden;
-            transition: background-color 0.5s ease;
+            transition: all 0.5s ease;
         }
         h1, h2, h3 {
             font-family: 'Playfair Display', serif;
         }
         .casino-gradient {
-            background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-end) 100%);
-            transition: background 0.5s ease;
+            background: radial-gradient(circle at top, var(--bg-start) 0%, var(--bg-end) 100%);
+            min-height: 100vh;
         }
         .gold-glow {
-            text-shadow: 0 0 10px var(--primary-glow);
+            text-shadow: 0 0 15px var(--primary-glow);
         }
         .neon-border {
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 0 15px var(--primary-glow);
-            transition: box-shadow 0.5s ease;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), 0 0 15px var(--primary-glow);
+            backdrop-filter: blur(12px);
         }
         .text-accent { color: var(--primary-accent); }
         .bg-accent { background-color: var(--primary-accent); }
         .border-accent { border-color: var(--primary-accent); }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary-accent); }
+
+        .game-card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .game-card-hover:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 10px 40px -10px var(--primary-glow);
+        }
+        
+        @keyframes subtle-pulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+        .pulse-accent { animation: subtle-pulse 2s infinite ease-in-out; }
     </style>
 <script type="importmap">
 {
@@ -73,13 +91,14 @@
     "react/": "https://esm.sh/react@^19.2.4/",
     "d3": "https://esm.sh/d3@^7.9.0",
     "vite": "https://esm.sh/vite@^7.3.1",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "@google/genai": "https://esm.sh/@google/genai@^1.38.0"
   }
 }
 </script>
 </head>
 <body>
     <div id="root"></div>
-    <script type="module" src="./index.tsx"></script>
+    <script type="module" src="index.tsx"></script>
 </body>
 </html>
