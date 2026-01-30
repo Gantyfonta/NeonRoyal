@@ -5,9 +5,11 @@ interface CoinFlipProps {
   balance: number;
   bet: number;
   onResult: (amount: number, resultText: string) => void;
+  // Added optional prop for dynamic multipliers from App.tsx
+  winMultiplier?: number;
 }
 
-const CoinFlip: React.FC<CoinFlipProps> = ({ balance, bet, onResult }) => {
+const CoinFlip: React.FC<CoinFlipProps> = ({ balance, bet, onResult, winMultiplier = 2 }) => {
   const [flipping, setFlipping] = useState(false);
   const [side, setSide] = useState<'HEADS' | 'TAILS'>('HEADS');
   const [selection, setSelection] = useState<'HEADS' | 'TAILS' | null>(null);
@@ -24,8 +26,9 @@ const CoinFlip: React.FC<CoinFlipProps> = ({ balance, bet, onResult }) => {
       setFlipping(false);
 
       if (result === selection) {
-        const winAmount = bet * 2;
-        onResult(winAmount, `It's ${result}! You doubled your bet to $${winAmount}!`);
+        // Fix: Utilize winMultiplier for win amount calculation and update the text message
+        const winAmount = Math.ceil(bet * winMultiplier);
+        onResult(winAmount, `It's ${result}! You won $${winAmount}!`);
       } else {
         onResult(0, `Hard luck. It landed on ${result}.`);
       }

@@ -7,9 +7,11 @@ interface RouletteProps {
   balance: number;
   bet: number;
   onResult: (amount: number, resultText: string) => void;
+  // Added optional prop to handle dynamic multipliers from parent component
+  straightUpMultiplier?: number;
 }
 
-const Roulette: React.FC<RouletteProps> = ({ balance, bet, onResult }) => {
+const Roulette: React.FC<RouletteProps> = ({ balance, bet, onResult, straightUpMultiplier = 35 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [spinning, setSpinning] = useState(false);
   const [selectedNum, setSelectedNum] = useState<number | null>(null);
@@ -77,7 +79,8 @@ const Roulette: React.FC<RouletteProps> = ({ balance, bet, onResult }) => {
       .on('end', () => {
         setSpinning(false);
         if (winningNumber === selectedNum) {
-          const winAmount = bet * 35;
+          // Fix: Utilize straightUpMultiplier for win calculation
+          const winAmount = bet * straightUpMultiplier;
           onResult(winAmount, `UNBELIEVABLE! Number ${winningNumber} hit! You won $${winAmount}!`);
         } else {
           onResult(0, `The ball landed on ${winningNumber}. Hard luck.`);
@@ -94,7 +97,7 @@ const Roulette: React.FC<RouletteProps> = ({ balance, bet, onResult }) => {
         <svg ref={svgRef} className="w-64 h-64 md:w-80 md:h-80 shadow-2xl rounded-full border-4 border-slate-800"></svg>
       </div>
 
-      <div className="flex flex-col gap-4 w-full max-w-md">
+      <div className="flex flex-col gap-4 w-full max-md">
         <span className="text-xs font-black uppercase text-center tracking-widest text-slate-500">Select your lucky number</span>
         <div className="grid grid-cols-6 gap-1 md:grid-cols-10">
           {ROULETTE_NUMBERS.slice().sort((a,b) => a-b).map(num => (

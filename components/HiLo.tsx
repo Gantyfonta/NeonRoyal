@@ -7,9 +7,11 @@ interface HiLoProps {
   balance: number;
   bet: number;
   onResult: (amount: number, resultText: string) => void;
+  // Added optional prop for dynamic win multipliers
+  winMultiplier?: number;
 }
 
-const HiLo: React.FC<HiLoProps> = ({ balance, bet, onResult }) => {
+const HiLo: React.FC<HiLoProps> = ({ balance, bet, onResult, winMultiplier = 1.85 }) => {
   const [currentCard, setCurrentCard] = useState<Card | null>(null);
   const [nextCard, setNextCard] = useState<Card | null>(null);
   const [gameState, setGameState] = useState<'IDLE' | 'PLAYING'>('IDLE');
@@ -41,7 +43,8 @@ const HiLo: React.FC<HiLoProps> = ({ balance, bet, onResult }) => {
     const isWin = guess === 'HI' ? next.rank >= currentCard!.rank : next.rank <= currentCard!.rank;
 
     if (isWin) {
-      const winAmount = Math.ceil(bet * 1.85);
+      // Fix: Apply winMultiplier to the bet amount
+      const winAmount = Math.ceil(bet * winMultiplier);
       onResult(winAmount, `Correct! The ${next.value} of ${next.suit} was ${guess}. You won $${winAmount}!`);
     } else {
       onResult(0, `Wrong! The ${next.value} of ${next.suit} wasn't ${guess}.`);
