@@ -12,9 +12,7 @@ import CoinFlip from './components/CoinFlip';
 import TexasHoldem from './components/TexasHoldem';
 import Plinko from './components/Plinko';
 import Rewards from './components/Rewards';
-import PitBoss from './components/PitBoss';
 
-// Main application component that coordinates state and views
 const App: React.FC = () => {
   const [activeGame, setActiveGame] = useState<GameType>(GameType.LOBBY);
   const [lastEvent, setLastEvent] = useState<string>('');
@@ -143,7 +141,7 @@ const App: React.FC = () => {
               >
                 <div className="w-16 h-16 rounded-2xl bg-slate-900 flex items-center justify-center text-3xl group-hover:text-accent transition-colors">
                   <i className={`fas ${
-                    type === GameType.SLOTS ? 'fa-republican' : 
+                    type === GameType.SLOTS ? 'fa-gem' : 
                     type === GameType.BLACKJACK ? 'fa-suit-spades' : 
                     type === GameType.ROULETTE ? 'fa-circle-dot' : 
                     type === GameType.HI_LO ? 'fa-arrows-up-down' : 
@@ -209,12 +207,11 @@ const App: React.FC = () => {
           </div>
 
           <div className="space-y-8">
-            <PitBoss balance={state.balance} history={state.history} />
             <DealerLog lastEvent={lastEvent} />
             
             <div className="bg-slate-900/60 rounded-3xl p-6 border border-white/5 space-y-4">
               <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Floor History</h4>
-              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                 {state.history.length === 0 ? (
                   <p className="text-xs text-slate-600 italic">No action yet today...</p>
                 ) : (
@@ -231,6 +228,24 @@ const App: React.FC = () => {
                   ))
                 )}
               </div>
+            </div>
+
+            <div className="bg-slate-900/40 rounded-3xl p-6 border border-white/5">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Casino Status</h4>
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <span className="text-xs text-slate-400">House Edge</span>
+                        <span className="text-xs font-bold text-emerald-500">Optimized</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <span className="text-xs text-slate-400">Server Seed</span>
+                        <span className="text-xs font-bold text-slate-200 uppercase font-mono">Verified</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <span className="text-xs text-slate-400">Active Players</span>
+                        <span className="text-xs font-bold text-accent">1,248</span>
+                    </div>
+                </div>
             </div>
           </div>
         </div>

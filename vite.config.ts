@@ -7,10 +7,7 @@ export default defineConfig({
   plugins: [react()],
   base: './', // CRITICAL: Ensures assets use relative paths for GitHub Pages subfolder hosting
   define: {
-    // Shim process.env for browser compatibility
-    'process.env': {
-      API_KEY: JSON.stringify(process.env.API_KEY || '')
-    }
+    // No process.env shim needed for AI features
   },
   build: {
     outDir: 'dist',
