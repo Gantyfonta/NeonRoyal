@@ -39,10 +39,10 @@ const SlotMachine: React.FC<SlotMachineProps> = ({ balance, bet, onResult, bonus
 
       if (finalReels[0] === finalReels[1] && finalReels[1] === finalReels[2]) {
         const symbol = SLOT_SYMBOLS.find(s => s.char === finalReels[0]);
-        const winAmount = Math.floor(bet * (symbol?.multiplier || 1) * bonusMultiplier);
+        const winAmount = Math.ceil(bet * (symbol?.multiplier || 1) * bonusMultiplier);
         onResult(winAmount, `JACKPOT! Three ${finalReels[0]} in a row for $${winAmount}!`);
       } else if (finalReels[0] === finalReels[1] || finalReels[1] === finalReels[2] || finalReels[0] === finalReels[2]) {
-        const winAmount = Math.floor(bet * 1.5 * bonusMultiplier);
+        const winAmount = Math.ceil(bet * 1.5 * bonusMultiplier);
         onResult(winAmount, `Matched two! Won $${winAmount}.`);
       } else {
         onResult(0, "No luck this time.");

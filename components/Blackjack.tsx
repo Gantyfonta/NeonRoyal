@@ -88,7 +88,7 @@ const Blackjack: React.FC<BlackjackProps> = ({ balance, bet, onResult, bonusPayo
   const endGame = (result: 'WIN' | 'LOSS' | 'PUSH', text: string) => {
     setGameStatus('OVER');
     setMsg(text);
-    if (result === 'WIN') onResult(Math.floor(bet * bonusPayout), text);
+    if (result === 'WIN') onResult(Math.ceil(bet * bonusPayout), text);
     else if (result === 'PUSH') onResult(bet, text);
     else onResult(0, text);
   };

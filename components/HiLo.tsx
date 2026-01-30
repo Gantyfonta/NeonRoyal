@@ -41,7 +41,7 @@ const HiLo: React.FC<HiLoProps> = ({ balance, bet, onResult }) => {
     const isWin = guess === 'HI' ? next.rank >= currentCard!.rank : next.rank <= currentCard!.rank;
 
     if (isWin) {
-      const winAmount = Math.floor(bet * 1.85);
+      const winAmount = Math.ceil(bet * 1.85);
       onResult(winAmount, `Correct! The ${next.value} of ${next.suit} was ${guess}. You won $${winAmount}!`);
     } else {
       onResult(0, `Wrong! The ${next.value} of ${next.suit} wasn't ${guess}.`);

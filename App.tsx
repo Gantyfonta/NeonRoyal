@@ -135,9 +135,14 @@ const App: React.FC = () => {
 
   const handleGameResult = useCallback((payout: number, context: string) => {
     let finalPayout = payout;
-    if (payout > state.bet) {
-      if (timeContext.isGoldenHour) finalPayout = Math.floor(finalPayout * 1.5);
-      if (timeContext.day === 'Saturday') finalPayout = Math.floor(finalPayout * 1.2);
+    // Rounding up payouts if they are positive
+    if (payout > 0) {
+      finalPayout = Math.ceil(payout);
+    }
+
+    if (finalPayout > state.bet) {
+      if (timeContext.isGoldenHour) finalPayout = Math.ceil(finalPayout * 1.5);
+      if (timeContext.day === 'Saturday') finalPayout = Math.ceil(finalPayout * 1.2);
     }
 
     setState(prev => {

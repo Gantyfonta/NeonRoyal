@@ -59,7 +59,7 @@ const TexasHoldem: React.FC<TexasHoldemProps> = ({ balance, bet, onResult }) => 
     const dealerMax = Math.max(...dealerFull.map(c => c.rank));
 
     if (playerMax > dealerMax) {
-      const win = bet * 3;
+      const win = Math.ceil(bet * 3);
       onResult(win, `Player wins with High Card ${playerMax}! Payout: $${win}`);
     } else if (playerMax < dealerMax) {
       onResult(0, `Dealer wins with High Card ${dealerMax}. Better luck next time.`);

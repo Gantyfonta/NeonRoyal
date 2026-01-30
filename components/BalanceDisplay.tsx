@@ -8,14 +8,14 @@ interface BalanceDisplayProps {
 }
 
 const BalanceDisplay: React.FC<BalanceDisplayProps> = ({ balance, bet, setBet }) => {
-  const betOptions = [10, 25, 50, 100, 500];
+  const betOptions = [1, 10, 25, 50, 100, 500];
 
   return (
     <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-6 bg-slate-900/50 backdrop-blur-md rounded-2xl neon-border">
       <div className="flex flex-col">
         <span className="text-slate-400 text-xs uppercase tracking-widest font-bold">Total Balance</span>
         <span className="text-3xl font-bold text-accent gold-glow">
-          ${balance.toLocaleString()}
+          ${Math.ceil(balance).toLocaleString()}
         </span>
       </div>
 

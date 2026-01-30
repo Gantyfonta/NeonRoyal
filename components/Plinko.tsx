@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 
 interface PlinkoProps {
   balance: number;
@@ -23,7 +23,7 @@ const Plinko: React.FC<PlinkoProps> = ({ balance, bet, onResult }) => {
     setTrail([]);
     
     let currentX = 50;
-    let path: { x: number, y: number }[] = [];
+    const path: { x: number, y: number }[] = [];
 
     for (let row = 0; row <= ROWS; row++) {
       const step = row * (100 / (ROWS + 1));
@@ -42,8 +42,12 @@ const Plinko: React.FC<PlinkoProps> = ({ balance, bet, onResult }) => {
         finishDrop(currentX);
         return;
       }
-      setBallPos(path[frame]);
-      setTrail(prev => [...prev, path[frame]]);
+      
+      const nextPoint = path[frame];
+      if (nextPoint) {
+        setBallPos(nextPoint);
+        setTrail(prev => [...prev, nextPoint]);
+      }
       frame++;
     }, 150);
   };
@@ -55,7 +59,7 @@ const Plinko: React.FC<PlinkoProps> = ({ balance, bet, onResult }) => {
     const normalized = (finalX - 30) / 40; // 0 to 1
     const index = Math.max(0, Math.min(MULTIPLIERS.length - 1, Math.floor(normalized * MULTIPLIERS.length)));
     const mult = MULTIPLIERS[index];
-    const win = Math.floor(bet * mult);
+    const win = Math.ceil(bet * mult);
     onResult(win, `Ball landed in ${mult}x slot! Won $${win}.`);
   };
 
@@ -73,22 +77,35 @@ const Plinko: React.FC<PlinkoProps> = ({ balance, bet, onResult }) => {
 
         {/* Path Trail */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none">
-          {trail.map((p, i) => i > 0 && (
-            <line 
-              key={i} 
-              x1={`${trail[i-1].x}%`} y1={`${trail[i-1].y}%`} 
-              x2={`${p.x}%`} y2={`${p.y}%`} 
-              stroke="rgba(234, 179, 8, 0.2)" 
-              strokeWidth="2"
-            />
-          ))}
+          {trail.map((p, i) => {
+            // Safety check: ensure both current point and previous point exist and have properties
+            if (i > 0 && p && trail[i - 1]) {
+              return (
+                <line 
+                  key={`trail-segment-${i}`} 
+                  x1={`${trail[i - 1].x}%`} 
+                  y1={`${trail[i - 1].y}%`} 
+                  x2={`${p.x}%`} 
+                  y2={`${p.y}%`} 
+                  stroke="rgba(234, 179, 8, 0.4)" 
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              );
+            }
+            return null;
+          })}
         </svg>
 
         {/* Ball */}
         {isDropping && (
           <div 
-            className="absolute w-4 h-4 bg-accent rounded-full shadow-lg shadow-yellow-500/50 transition-all duration-150 ease-linear"
-            style={{ left: `${ballPos.x}%`, top: `${ballPos.y}%`, transform: 'translate(-50%, -50%)' }}
+            className="absolute w-4 h-4 bg-accent rounded-full shadow-lg shadow-accent/50 transition-all duration-150 ease-linear z-10"
+            style={{ 
+              left: `${ballPos?.x ?? 50}%`, 
+              top: `${ballPos?.y ?? 0}%`, 
+              transform: 'translate(-50%, -50%)' 
+            }}
           ></div>
         )}
 
@@ -102,13 +119,16 @@ const Plinko: React.FC<PlinkoProps> = ({ balance, bet, onResult }) => {
         </div>
       </div>
 
-      <button 
-        onClick={dropBall} 
-        disabled={isDropping || balance < bet}
-        className="px-12 py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-black rounded-full uppercase tracking-widest shadow-lg shadow-cyan-600/20 disabled:opacity-50 transition-all"
-      >
-        {isDropping ? 'Dropping...' : 'Drop Ball'}
-      </button>
+      <div className="flex flex-col items-center gap-2">
+        <button 
+          onClick={dropBall} 
+          disabled={isDropping || balance < bet}
+          className="px-12 py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-black rounded-full uppercase tracking-widest shadow-lg shadow-cyan-600/20 disabled:opacity-50 transition-all"
+        >
+          {isDropping ? 'Dropping...' : 'Drop Ball'}
+        </button>
+        <p className="text-[10px] text-slate-500 uppercase tracking-widest">Plinko Multipliers: {MULTIPLIERS[0]}x to {MULTIPLIERS[3]}x</p>
+      </div>
     </div>
   );
 };
